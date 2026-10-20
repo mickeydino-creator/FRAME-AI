@@ -11,6 +11,8 @@ import { Properties } from './components/Properties'
 import { StartScreen } from './components/StartScreen'
 import { Timeline } from './components/Timeline'
 import { Toasts } from './components/Toasts'
+import { AssistantPanel } from './components/AssistantPanel'
+import { useAssistant } from './assistant/store'
 import { TopBar } from './components/TopBar'
 
 function isTyping(e: KeyboardEvent): boolean {
@@ -117,6 +119,7 @@ function onKeyDown(e: KeyboardEvent): void {
 export function App() {
   const hasProject = useEditor((s) => !!s.project)
   const exportOpen = useEditor((s) => s.exportOpen)
+  const assistantOpen = useAssistant((s) => s.open)
 
   useEffect(() => {
     installEditorBridge()
@@ -175,10 +178,11 @@ export function App() {
   return (
     <div className="app">
       <TopBar />
-      <div className="workspace">
+      <div className={`workspace ${assistantOpen ? '' : 'assistant-closed'}`}>
         <MediaLibrary />
         <Preview />
         <Properties />
+        <AssistantPanel />
       </div>
       <Timeline />
       {exportOpen && <ExportDialog />}

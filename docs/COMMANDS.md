@@ -94,3 +94,12 @@ ed.setKeyframe(title.clipId, 'scale', 3, 1.2)
 const job = await ed.exportProject({ outputPath: 'C:\\Videos\\out.mp4', height: 1080 })
 await ed.waitForExport(job)
 ```
+
+## Assistant panel seam
+
+The AI Assistant panel (`src/renderer/src/components/AssistantPanel.tsx`) talks only to an `AssistantProvider` (`src/renderer/src/assistant/provider.ts`):
+
+* `setProvider(provider)` registers a backend. The default `disconnectedProvider` sends nothing.
+* `provider.send({ messages, context }, signal)` streams `text`, `tool`, `error` and `done` events. `context` comes from `summarizeEditorState()`.
+* Tool calls must run through `runEditorTool(method, args)`, which calls the EditorAPI above, so every assistant edit is a normal undoable command.
+* Conversation history is stored per project in local storage (`src/renderer/src/assistant/store.ts`).

@@ -40,7 +40,16 @@ const PATHS: Record<string, string> = {
   alignLeft: 'M2.5 3.5h11M2.5 6.5h7M2.5 9.5h11M2.5 12.5h7',
   alignCenter: 'M2.5 3.5h11M4.5 6.5h7M2.5 9.5h11M4.5 12.5h7',
   alignRight: 'M2.5 3.5h11M6.5 6.5h7M2.5 9.5h11M6.5 12.5h7',
-  transition: 'M2 3.5h6v9H2zM8 3.5l6 4.5-6 4.5'
+  transition: 'M2 3.5h6v9H2zM8 3.5l6 4.5-6 4.5',
+  grip: 'M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01',
+  chevronDown: 'M4.5 6.5L8 10l3.5-3.5',
+  chevronRight: 'M6.5 4.5L10 8l-3.5 3.5',
+  scrub: 'M5 5.5L2.5 8 5 10.5M11 5.5l2.5 2.5-2.5 2.5M2.5 8h11',
+  chat: 'M2.5 3.5h11v7.5H7l-3 2.5v-2.5H2.5z',
+  send: 'M8 13V3.5M4 7.5l4-4 4 4',
+  panelRight: 'M2.5 3h11v10h-11zM10 3v10',
+  panelOpen: 'M2.5 3h11v10h-11zM10 3v10M6.5 6L4.5 8l2 2',
+  logo: 'M2.5 5V2.5H5M11 2.5h2.5V5M13.5 11v2.5H11M5 13.5H2.5V11M6 6h4v4H6z'
 }
 
 export function Icon({ name, size = 16, className }: { name: string; size?: number; className?: string }) {
@@ -54,7 +63,7 @@ export function Icon({ name, size = 16, className }: { name: string; size?: numb
       viewBox="0 0 16 16"
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
-      strokeWidth={filled ? 0 : 1.3}
+      strokeWidth={filled ? 0 : name === 'grip' ? 2.2 : 1.3}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden

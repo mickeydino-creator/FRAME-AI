@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { clipEnd, findMedia, projectDuration, trackKindForClip } from '../../../shared/project'
 import type { Clip, MediaAsset, Track } from '../../../shared/types'
 import { snapToFrame, uid } from '../../../shared/util'
@@ -138,9 +138,28 @@ function fmtRuler(t: number, major: number): string {
   return `${m}:${String(Math.round(s)).padStart(2, '0')}`
 }
 
-function Ruler({ zoom, scrollLeft, width }: { zoom: number; scrollLeft: number; width: number }) {
+/** The ruler tracks horizontal scroll itself so scrolling never re-renders the tracks. */
+function Ruler({ zoom, scrollEl, width }: { zoom: number; scrollEl: HTMLDivElement | null; width: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const scrub = useRef(false)
+  const [scrollLeft, setScrollLeft] = useState(0)
+  useEffect(() => {
+    if (!scrollEl) return
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        setScrollLeft(scrollEl.scrollLeft)
+      })
+    }
+    onScroll()
+    scrollEl.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      scrollEl.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(raf)
+    }
+  }, [scrollEl])
   useEffect(() => {
     const c = ref.current
     if (!c) return
@@ -153,16 +172,16 @@ function Ruler({ zoom, scrollLeft, width }: { zoom: number; scrollLeft: number; 
     const { major, minor } = pickInterval(zoom)
     const t0 = scrollLeft / zoom
     const t1 = (scrollLeft + width) / zoom
-    ctx.strokeStyle = '#3a3a42'
-    ctx.fillStyle = '#8a8a94'
-    ctx.font = '10px "Segoe UI", Arial, sans-serif'
+    ctx.strokeStyle = '#34343d'
+    ctx.fillStyle = '#8d8d98'
+    ctx.font = '10.5px "Segoe UI", Arial, sans-serif'
     ctx.beginPath()
     for (let t = Math.floor(t0 / minor) * minor; t <= t1; t += minor) {
       const x = Math.round(t * zoom - scrollLeft) + 0.5
       const isMajor = Math.abs(t / major - Math.round(t / major)) < 1e-6
       ctx.moveTo(x, RULER_H)
-      ctx.lineTo(x, isMajor ? 8 : RULER_H - 6)
-      if (isMajor) ctx.fillText(fmtRuler(Math.round(t * 1000) / 1000, major), x + 4, 14)
+      ctx.lineTo(x, isMajor ? RULER_H - 10 : RULER_H - 5)
+      if (isMajor) ctx.fillText(fmtRuler(Math.round(t * 1000) / 1000, major), x + 4, 12)
     }
     ctx.stroke()
   }, [zoom, scrollLeft, width])
@@ -197,9 +216,8 @@ function PlayheadLine({ zoom }: { zoom: number }) {
 
 // --------------------------------------------------------------- track head
 
-function TrackHeader({ track, index }: { track: Track; index: number }) {
+const TrackHeader = memo(function TrackHeader({ track, index, clipCount }: { track: Track; index: number; clipCount: number }) {
   const selected = useEditor((s) => s.selectedTrackId === track.id)
-  const clipCount = useEditor((s) => s.project!.clips.filter((c) => c.trackId === track.id).length)
   const [editing, setEditing] = useState(false)
   const update = (patch: Partial<Track>) => tryDispatch({ type: 'updateTrack', trackId: track.id, patch })
   return (
@@ -221,7 +239,9 @@ function TrackHeader({ track, index }: { track: Track; index: number }) {
       }}
       title="Drag to reorder tracks"
     >
-      <span className="grip">⋮⋮</span>
+      <span className="grip">
+        <Icon name="grip" size={12} />
+      </span>
       <div className="track-title">
         {editing ? (
           <input
@@ -253,7 +273,7 @@ function TrackHeader({ track, index }: { track: Track; index: number }) {
           <Icon name={track.locked ? 'lock' : 'unlock'} size={13} />
         </button>
         <button
-          className="icon-btn small"
+          className="icon-btn small track-delete"
           title="Delete track"
           onClick={() => {
             if (clipCount === 0 || window.confirm(`Delete track ${track.name} and its ${clipCount} clip(s)?`))
@@ -265,7 +285,7 @@ function TrackHeader({ track, index }: { track: Track; index: number }) {
       </div>
     </div>
   )
-}
+})
 
 // ------------------------------------------------------------------ timeline
 
@@ -277,6 +297,9 @@ interface DragState {
   started: boolean
   key: string
   orig: Map<string, { start: number; end: number; trackId: string }>
+  /** Latest pointer state, applied once per animation frame. */
+  last: { x: number; y: number; alt: boolean } | null
+  raf: number
 }
 
 export function Timeline() {
@@ -286,16 +309,27 @@ export function Timeline() {
   const selection = useEditor((s) => s.selection)
   const snapping = useEditor((s) => s.snapping)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [scroll, setScroll] = useState({ left: 0, width: 800 })
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
+  const [viewW, setViewW] = useState(800)
   const [dropTarget, setDropTarget] = useState<string | null>(null)
   const drag = useRef<DragState | null>(null)
 
   const duration = projectDuration(project)
-  const contentW = Math.max((duration + 30) * zoom, scroll.width - HEADER_W)
+  const contentW = Math.max((duration + 30) * zoom, viewW - HEADER_W)
+  const clipsByTrack = useMemo(() => {
+    const m = new Map<string, Clip[]>()
+    for (const c of project.clips) {
+      const list = m.get(c.trackId)
+      if (list) list.push(c)
+      else m.set(c.trackId, [c])
+    }
+    return m
+  }, [project.clips])
 
   useLayoutEffect(() => {
     const el = scrollRef.current!
-    const update = () => setScroll({ left: el.scrollLeft, width: el.clientWidth })
+    setScrollEl(el)
+    const update = () => setViewW(el.clientWidth)
     const ro = new ResizeObserver(update)
     ro.observe(el)
     update()
@@ -374,10 +408,11 @@ export function Timeline() {
       const c = s.project!.clips.find((x) => x.id === id)
       if (c) orig.set(id, { start: c.start, end: clipEnd(c), trackId: c.trackId })
     }
-    drag.current = { mode, clipId: clip.id, pointerX: e.clientX, pointerY: e.clientY, started: false, key: `drag-${Date.now()}`, orig }
+    drag.current = { mode, clipId: clip.id, pointerX: e.clientX, pointerY: e.clientY, started: false, key: `drag-${Date.now()}`, orig, last: null, raf: 0 }
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }, [])
 
+  // Pointer events can arrive several times per frame; apply only the latest one per frame.
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current
     if (!d) return
@@ -385,12 +420,23 @@ export function Timeline() {
       if (Math.abs(e.clientX - d.pointerX) < 3 && Math.abs(e.clientY - d.pointerY) < 3) return
       d.started = true
     }
+    d.last = { x: e.clientX, y: e.clientY, alt: e.altKey }
+    if (!d.raf)
+      d.raf = requestAnimationFrame(() => {
+        d.raf = 0
+        applyDrag(d)
+      })
+  }
+
+  const applyDrag = (d: DragState) => {
+    const e = d.last
+    if (!e) return
     const s = getState()
     const z = s.zoom
     const fps = s.project!.settings.fps
-    const dt = (e.clientX - d.pointerX) / z
+    const dt = (e.x - d.pointerX) / z
     const primary = d.orig.get(d.clipId)!
-    const cands = s.snapping && !e.altKey ? snapCandidates(new Set(d.orig.keys())) : []
+    const cands = s.snapping && !e.alt ? snapCandidates(new Set(d.orig.keys())) : []
     if (d.mode === 'move') {
       let delta = dt
       const snapStart = snapTime(primary.start + dt, cands, z)
@@ -403,7 +449,7 @@ export function Timeline() {
       // Track change (single clip only), resolved from the lane under the pointer.
       let trackId: string | undefined
       if (d.orig.size === 1) {
-        const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-track-id]') as HTMLElement | null
+        const el = document.elementFromPoint(e.x, e.y)?.closest('[data-track-id]') as HTMLElement | null
         const tid = el?.dataset.trackId
         const clip = s.project!.clips.find((c) => c.id === d.clipId)!
         const track = s.project!.tracks.find((t) => t.id === tid)
@@ -426,6 +472,11 @@ export function Timeline() {
   }
 
   const onPointerUp = () => {
+    const d = drag.current
+    if (d?.raf) {
+      cancelAnimationFrame(d.raf)
+      applyDrag(d)
+    }
     drag.current = null
   }
 
@@ -554,7 +605,6 @@ export function Timeline() {
       <div
         className="tl-scroll"
         ref={scrollRef}
-        onScroll={(e) => setScroll({ left: e.currentTarget.scrollLeft, width: e.currentTarget.clientWidth })}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
@@ -562,13 +612,13 @@ export function Timeline() {
         <div className="tl-inner" style={{ width: HEADER_W + contentW }}>
           <div className="tl-ruler-row" style={{ height: RULER_H }}>
             <div className="tl-corner" style={{ width: HEADER_W }} />
-            <div className="ruler-holder" style={{ left: HEADER_W, width: scroll.width - HEADER_W }}>
-              <Ruler zoom={zoom} scrollLeft={scroll.left} width={Math.max(1, scroll.width - HEADER_W)} />
+            <div className="ruler-holder" style={{ left: HEADER_W, width: viewW - HEADER_W }}>
+              <Ruler zoom={zoom} scrollEl={scrollEl} width={Math.max(1, viewW - HEADER_W)} />
             </div>
           </div>
           {tracks.map((track, i) => (
             <div key={track.id} className="tl-row">
-              <TrackHeader track={track} index={i} />
+              <TrackHeader track={track} index={i} clipCount={clipsByTrack.get(track.id)?.length ?? 0} />
               <div
                 className={`lane ${track.kind} ${dropTarget === track.id ? 'drop' : ''} ${track.hidden ? 'hidden-track' : ''}`}
                 style={{ height: TRACK_H[track.kind], width: contentW }}
@@ -584,9 +634,7 @@ export function Timeline() {
                 onDragLeave={() => setDropTarget(null)}
                 onDrop={(e) => handleDrop(e, track.id, e.currentTarget)}
               >
-                {project.clips
-                  .filter((c) => c.trackId === track.id)
-                  .map((c) => (
+                {(clipsByTrack.get(track.id) ?? []).map((c) => (
                     <ClipView
                       key={c.id}
                       clip={c}
@@ -621,6 +669,11 @@ export function Timeline() {
               }}
             />
           </div>
+          {project.clips.length === 0 && (
+            <div className="tl-empty" style={{ left: HEADER_W }}>
+              Drag media or a title here to start your edit. Double-click a file in the library to add it at the playhead.
+            </div>
+          )}
           <PlayheadLine zoom={zoom} />
         </div>
       </div>

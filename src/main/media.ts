@@ -37,6 +37,8 @@ interface Classified {
   videoCodec?: string
   audioCodec?: string
   needsProxy: boolean
+  /** Chromium can decode the original (a proxy would only be an optimization). */
+  playable: boolean
 }
 
 export function classify(file: string, info: ProbeResult): Classified {
@@ -55,7 +57,8 @@ export function classify(file: string, info: ProbeResult): Classified {
       hasVideo: true,
       hasAudio: false,
       videoCodec: video.codec_name,
-      needsProxy: false
+      needsProxy: false,
+      playable: true
     }
   }
   if (video) {
@@ -80,7 +83,10 @@ export function classify(file: string, info: ProbeResult): Classified {
       hasAudio: !!audio,
       videoCodec: video.codec_name,
       audioCodec: audio?.codec_name,
-      needsProxy: !(containerOk && videoOk && audioOk)
+      // Above 1080p, decoding the original every preview frame is wasted work: the
+      // preview never shows more than 1920 px. Export still reads the original file.
+      needsProxy: !(containerOk && videoOk && audioOk) || (width ?? 0) * (height ?? 0) > 1920 * 1088,
+      playable: containerOk && videoOk && audioOk
     }
   }
   if (audio) {
@@ -91,7 +97,8 @@ export function classify(file: string, info: ProbeResult): Classified {
       hasVideo: false,
       hasAudio: true,
       audioCodec: audio.codec_name,
-      needsProxy: !BROWSER_AUDIO_FILE.includes(audio.codec_name ?? '')
+      needsProxy: !BROWSER_AUDIO_FILE.includes(audio.codec_name ?? ''),
+      playable: BROWSER_AUDIO_FILE.includes(audio.codec_name ?? '')
     }
   }
   throw new FFmpegError('The file contains no video or audio streams.')
@@ -219,12 +226,19 @@ export async function importOne(
       )
       asset.proxy = proxy
     } catch (e) {
+      // An oversized but playable file still previews from the original.
+      if (c.playable) return progressDone(progress, name, asset)
       throw new FFmpegError(
         `This file uses a codec (${c.videoCodec ?? c.audioCodec}) that cannot be previewed, and converting it failed: ${(e as Error).message}`
       )
     }
   }
   progress({ file: name, stage: 'done' })
+  return asset
+}
+
+function progressDone(progress: (p: ImportProgress) => void, file: string, asset: MediaAsset): MediaAsset {
+  progress({ file, stage: 'done' })
   return asset
 }
 

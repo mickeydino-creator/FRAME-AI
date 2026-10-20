@@ -1,17 +1,32 @@
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { formatTimecode, parseTime } from '../../../shared/util'
+import { Icon } from './Icon'
 
 let mergeCounter = 0
 export function newMergeKey(prefix: string): string {
   return `${prefix}-${++mergeCounter}`
 }
 
-export function Section({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
-  const [open, setOpen] = useState(true)
+// Remember which sections the user collapsed while switching between clips.
+const sectionOpen = new Map<string, boolean>()
+
+export function Section({ title, children, right, defaultOpen = true }: { title: string; children: ReactNode; right?: ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpenState] = useState(sectionOpen.get(title) ?? defaultOpen)
+  const setOpen = (v: boolean) => {
+    sectionOpen.set(title, v)
+    setOpenState(v)
+  }
   return (
     <div className={`section ${open ? '' : 'closed'}`}>
-      <div className="section-head" onClick={() => setOpen(!open)}>
-        <span className="chev">{open ? '▾' : '▸'}</span>
+      <div
+        className="section-head"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setOpen(!open))}
+      >
+        <Icon name={open ? 'chevronDown' : 'chevronRight'} size={12} className="chev" />
         <span>{title}</span>
         <div className="spacer" />
         <div onClick={(e) => e.stopPropagation()}>{right}</div>
@@ -84,8 +99,9 @@ export function NumberField({ value, onChange, step = 1, min, max, factor = 1, p
           }}
           onPointerUp={() => (scrub.current = null)}
           title="Drag to adjust (Shift = faster, Alt = finer)"
+          aria-label={label}
         >
-          {label}
+          <Icon name="scrub" size={11} />
         </span>
       )}
       <input

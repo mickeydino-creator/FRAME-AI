@@ -4,8 +4,8 @@
  * draws the composition with the shared compositor.
  */
 import { audioGain } from '../../../shared/animation'
-import { clipEnd, findMedia, findTrack, projectDuration } from '../../../shared/project'
-import type { Clip, MediaAsset } from '../../../shared/types'
+import { clipEnd, findMedia, projectDuration } from '../../../shared/project'
+import type { Clip, MediaAsset, Project, Track } from '../../../shared/types'
 import { getState, setState, useEditor } from '../editor/store'
 import { LayerHit, renderFrame, VisualSource } from './compositor'
 import { mediaUrl } from './paths'
@@ -26,6 +26,8 @@ class PreviewEngine {
   private playStartWall = 0
   private playStartPos = 0
   private renderListeners = new Set<() => void>()
+  private lastFrame = -1
+  private index: { project: Project; clips: Map<string, Clip>; tracks: Map<string, Track>; duration: number } | null = null
   lastHits: LayerHit[] = []
 
   constructor() {
@@ -137,15 +139,29 @@ class PreviewEngine {
     this.media.delete(id)
   }
 
+  /** Id lookups and duration, rebuilt only when the project object changes. */
+  private lookup(project: Project) {
+    if (this.index?.project !== project) {
+      this.index = {
+        project,
+        clips: new Map(project.clips.map((c) => [c.id, c])),
+        tracks: new Map(project.tracks.map((t) => [t.id, t])),
+        duration: projectDuration(project)
+      }
+    }
+    return this.index
+  }
+
   /** Drive every media element to match timeline time t. */
   private syncMedia(t: number, playing: boolean): void {
     const { project } = getState()
     if (!project) return
     const fps = project.settings.fps
+    const { clips, tracks } = this.lookup(project)
     for (const [clipId, entry] of this.media) {
-      const clip = project.clips.find((c) => c.id === clipId)
+      const clip = clips.get(clipId)
       if (!clip) continue
-      const track = findTrack(project, clip.trackId)
+      const track = tracks.get(clip.trackId)
       const el = entry.el
       const active = t >= clip.start && t < clipEnd(clip)
       const expected = (clip.sourceStart ?? 0) + (t - clip.start)
@@ -189,7 +205,7 @@ class PreviewEngine {
   play(): void {
     const s = getState()
     if (!s.project || s.playing) return
-    const duration = projectDuration(s.project)
+    const { duration } = this.lookup(s.project)
     let start = s.playhead
     if (duration > 0 && start >= duration - 1e-3) start = 0
     void this.ctx().resume()
@@ -216,18 +232,25 @@ class PreviewEngine {
     const s = getState()
     if (!s.project) return
     if (s.playing) {
-      const duration = projectDuration(s.project)
+      const { duration } = this.lookup(s.project)
       let t = this.playStartPos + (performance.now() - this.playStartWall) / 1000
       if (t >= duration) {
         t = duration
         setState({ playhead: t, playing: false })
         this.syncMedia(t, false)
+        this.needsRender = true
       } else {
-        setState({ playhead: t })
-        this.syncMedia(t, true)
+        // The composition only changes once per project frame; on a 60 Hz display
+        // a 30 fps project would otherwise be composited (and the UI updated) twice per frame.
+        const frame = Math.floor(t * s.project.settings.fps)
+        if (frame !== this.lastFrame) {
+          this.lastFrame = frame
+          setState({ playhead: t })
+          this.syncMedia(t, true)
+          this.needsRender = true
+        }
       }
-      this.needsRender = true
-    }
+    } else this.lastFrame = -1
     if (this.needsRender) {
       this.needsRender = false
       this.draw()

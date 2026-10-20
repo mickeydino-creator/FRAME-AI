@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { evaluateTransform } from '../../../shared/animation'
 import { findClip, findTrack, projectDuration } from '../../../shared/project'
 import type { AspectRatio } from '../../../shared/types'
@@ -11,7 +11,8 @@ import { Icon } from './Icon'
 function Timecode() {
   const playhead = useEditor((s) => s.playhead)
   const fps = useEditor((s) => s.project!.settings.fps)
-  const duration = useEditor((s) => projectDuration(s.project!))
+  const clips = useEditor((s) => s.project!.clips)
+  const duration = useMemo(() => projectDuration(getState().project!), [clips])
   return (
     <div className="timecode">
       <span className="tc-now">{formatTimecode(playhead, fps)}</span>
@@ -30,6 +31,7 @@ export function Preview() {
   const settings = useEditor((s) => s.project!.settings)
   const playing = useEditor((s) => s.playing)
   const zoom = useEditor((s) => s.previewZoom)
+  const empty = useEditor((s) => s.project!.clips.length === 0)
 
   useEffect(() => {
     preview.attach(canvasRef.current)
@@ -162,6 +164,12 @@ export function Preview() {
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
           />
+          {empty && (
+            <div className="preview-empty">
+              <b>Nothing on the timeline yet</b>
+              <span>Add media or a title to see it here.</span>
+            </div>
+          )}
         </div>
       </div>
       <div className="transport">
@@ -195,7 +203,7 @@ export function Preview() {
             <Icon name="next" />
           </button>
         </div>
-        <div className="transport-right muted small">Drag layers in the frame to position them</div>
+        <div className="transport-right" />
       </div>
     </section>
   )

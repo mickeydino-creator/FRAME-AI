@@ -85,6 +85,17 @@ export function layoutText(ctx: CanvasRenderingContext2D, s: TextStyle, frameWid
   }
 }
 
+// Text clips are immutable (immer), so a style object identifies its layout.
+const layoutCache = new WeakMap<TextStyle, { frameWidth: number; layout: TextLayout }>()
+
+function cachedLayout(ctx: CanvasRenderingContext2D, s: TextStyle, frameWidth: number): TextLayout {
+  const hit = layoutCache.get(s)
+  if (hit && hit.frameWidth === frameWidth) return hit.layout
+  const layout = layoutText(ctx, s, frameWidth)
+  layoutCache.set(s, { frameWidth, layout })
+  return layout
+}
+
 export function makeFill(ctx: CanvasRenderingContext2D, fill: Fill, w: number, h: number): string | CanvasGradient {
   if (fill.kind === 'solid') return fill.color
   const colors = fill.colors.length ? fill.colors : ['#000000', '#ffffff']
@@ -214,7 +225,7 @@ function contentSize(
       return { w: w * k, h: h * k, sx: 1, sy: 1 }
     }
     case 'text': {
-      const text = layoutText(ctx, clip.text!, W)
+      const text = cachedLayout(ctx, clip.text!, W)
       return { w: text.width, h: text.height, sx: 1, sy: 1, text }
     }
     case 'shape':

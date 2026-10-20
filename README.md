@@ -14,6 +14,7 @@ FRAME AI is a local desktop video editor for Windows, built with Electron, React
 - **Transitions**: in/out transition presets on any visual clip, plus a true cross-dissolve (picture and audio) from the previous clip on the track.
 - **Undo/redo** for every edit, including drags, which count as one step each.
 - **Projects**: a versioned JSON project folder with copied assets. When you reopen a project it detects missing files, recovers them from the original location when possible, and otherwise offers Relink. A recent-projects list is included.
+- **AI Assistant panel** (right side; Ctrl+J to collapse or open): a chat interface with suggested prompts and a message history stored per project on this computer. No assistant is connected in this version. Messages are not sent anywhere and nothing is edited. A provider seam is ready for a future local integration (see docs/COMMANDS.md).
 - **Export**: MP4 (H.264/AAC) or WebM (VP9/Opus) at project size, 720p or 480p. You choose 24-60 fps and the quality. Rendering runs in a hidden window and FFmpeg processes, so the editor stays responsive. It shows progress and an ETA, and can be cancelled.
 
 ## Install and run on Windows (from source)
@@ -100,6 +101,7 @@ Export pipeline:
 npm test            # unit tests (command layer, animation, audio mix, timecode)
 npm run build
 npm run test:e2e    # launches the real app, imports, edits, saves/reopens, exports and checks the result with ffprobe
+node scripts/perf.mjs  # builds a heavy project and reports playback / drag / scroll CPU time
 ```
 
 ## Known limitations

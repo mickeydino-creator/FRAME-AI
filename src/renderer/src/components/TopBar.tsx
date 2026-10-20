@@ -31,7 +31,7 @@ export function TopBar() {
   return (
     <header className="topbar">
       <div className="brand">
-        <span className="logo-mark">▮</span>
+        <Icon name="logo" size={18} className="logo-mark" />
         <span className="logo-text">
           FRAME<b>AI</b>
         </span>
@@ -76,11 +76,11 @@ export function TopBar() {
           spellCheck={false}
           title="Project name"
         />
-        {dirty && <span className="dirty-dot" title="Unsaved changes" />}
+        <span className={`save-state ${dirty ? 'dirty' : ''}`}>{dirty ? 'Unsaved changes' : 'Saved'}</span>
       </div>
       <div className="menu-group">
-        <button className="icon-btn" title="Save (Ctrl+S)" onClick={() => void saveWithToast()}>
-          <Icon name="save" />
+        <button className={`btn ghost ${dirty ? '' : 'quiet'}`} title="Save (Ctrl+S)" onClick={() => void saveWithToast()}>
+          <Icon name="save" /> Save
         </button>
         <button className="icon-btn" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={() => undo()}>
           <Icon name="undo" />
@@ -91,7 +91,7 @@ export function TopBar() {
       </div>
       <div className="spacer" />
       <label className="inline-select" title="Preview render resolution">
-        <span>Preview</span>
+        <span>Preview quality</span>
         <select value={quality} onChange={(e) => setState({ previewQuality: Number(e.target.value) as PreviewQuality })}>
           <option value={1}>Full</option>
           <option value={0.5}>Half</option>

@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { ANIMATION_PRESETS, evaluateTransform } from '../../../shared/animation'
 import { ClipPatch } from '../../../shared/commands'
 import { clipEnd, findMedia, findTrack, FONT_FAMILIES } from '../../../shared/project'
@@ -86,7 +87,11 @@ const TRANSFORM_FIELDS: { prop: AnimatableProp; label: string; factor?: number; 
 ]
 
 function TransformSection({ clip }: { clip: Clip }) {
-  const playhead = useEditor((s) => s.playhead)
+  // Values are frozen while playing so this panel does not re-render every frame.
+  const frozen = useRef(0)
+  const live = useEditor((s) => (s.playing ? null : s.playhead))
+  if (live !== null) frozen.current = live
+  const playhead = frozen.current
   const local = Math.min(Math.max(playhead - clip.start, 0), clip.duration)
   const inRange = playhead >= clip.start && playhead <= clipEnd(clip)
   const tr = evaluateTransform(clip, local)
@@ -281,7 +286,7 @@ function TextSection({ clip }: { clip: Clip }) {
           <NumberField value={t.maxWidth} label="↔" unit="px" min={0} onChange={(v, k) => set({ maxWidth: v }, k)} />
         </Row>
       </Section>
-      <Section title="Text effects">
+      <Section title="Outline, shadow and box" defaultOpen={false}>
         <Row label="Outline">
           <NumberField value={t.strokeWidth} label="↔" unit="px" min={0} onChange={(v, k) => set({ strokeWidth: v }, k)} />
         </Row>
@@ -439,7 +444,7 @@ function AnimationSection({ clip }: { clip: Clip }) {
     )
   }
   return (
-    <Section title={isMedia ? 'Transitions & animation' : 'Animation'}>
+    <Section title={isMedia ? 'Transitions' : 'Animation'}>
       {row('in')}
       {row('out')}
       {isMedia && (
@@ -524,8 +529,8 @@ function ProjectSection() {
           </Row>
         </Section>
       )}
+      <Section title="Keyboard shortcuts" defaultOpen={false}>
       <div className="shortcuts">
-        <h4>Shortcuts</h4>
         <dl>
           <dt>Space</dt><dd>Play / pause</dd>
           <dt>← →</dt><dd>Step one frame (Shift: 1s)</dd>
@@ -538,6 +543,7 @@ function ProjectSection() {
           <dt>+ / −</dt><dd>Timeline zoom</dd>
         </dl>
       </div>
+      </Section>
     </>
   )
 }
@@ -600,7 +606,9 @@ export function Properties() {
   }
   return (
     <aside className="panel properties">
-      <div className="panel-title">{clip ? 'Properties' : selection.length > 1 ? 'Selection' : 'Project'}</div>
+      <div className="panel-header">
+        <span className="panel-header-title">{clip ? 'Properties' : selection.length > 1 ? 'Selection' : 'Project'}</span>
+      </div>
       <div className="properties-body">{body}</div>
     </aside>
   )

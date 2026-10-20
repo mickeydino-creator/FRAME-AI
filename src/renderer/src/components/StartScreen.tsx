@@ -38,7 +38,7 @@ export function StartScreen() {
     <div className="start">
       <div className="start-card">
         <div className="start-brand">
-          <span className="logo-mark">▮</span>
+          <Icon name="logo" size={22} className="logo-mark" />
           <span className="logo-text">
             FRAME<b>AI</b>
           </span>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import type { MediaAsset } from '../../../shared/types'
 import { formatDuration } from '../../../shared/util'
 import { editor } from '../editor/api'
@@ -40,8 +40,7 @@ export function insertItem(item: DragItem, start?: number, trackId?: string): vo
   })
 }
 
-function MediaCard({ asset, dir }: { asset: MediaAsset; dir: string }) {
-  const used = useEditor((s) => s.project?.clips.some((c) => c.mediaId === asset.id) ?? false)
+const MediaCard = memo(function MediaCard({ asset, dir, used }: { asset: MediaAsset; dir: string; used: boolean }) {
   const thumb = asset.thumbnail ? mediaUrl(dir, asset.thumbnail) : null
   return (
     <div
@@ -58,7 +57,7 @@ function MediaCard({ asset, dir }: { asset: MediaAsset; dir: string }) {
       title={`${asset.name}\n${asset.width ? `${asset.width}×${asset.height} · ` : ''}${asset.videoCodec ?? asset.audioCodec ?? ''}${asset.proxy ? ' · preview proxy' : ''}\nDouble-click or drag to the timeline`}
     >
       <div className={`media-thumb ${asset.type}`}>
-        {thumb ? <img src={thumb} alt="" draggable={false} /> : <Icon name={asset.type} size={26} />}
+        {thumb ? <img src={thumb} alt="" draggable={false} loading="lazy" decoding="async" /> : <Icon name={asset.type} size={24} />}
         <span className="badge">{asset.type}</span>
         {asset.duration > 0 && <span className="dur">{formatDuration(asset.duration)}</span>}
         {used && <span className="used" title="Used in timeline" />}
@@ -86,7 +85,7 @@ function MediaCard({ asset, dir }: { asset: MediaAsset; dir: string }) {
       </div>
     </div>
   )
-}
+})
 
 function GraphicsPanel() {
   const drag = (item: DragItem) => (e: React.DragEvent) => {
@@ -151,7 +150,7 @@ function GraphicsPanel() {
           </button>
         ))}
       </div>
-      <h4>Motion templates</h4>
+      <h4>Templates</h4>
       <div className="template-list">
         {TEMPLATES.map((t) => (
           <button
@@ -174,7 +173,9 @@ function GraphicsPanel() {
 }
 
 export function MediaLibrary() {
-  const media = useEditor((s) => s.project?.media ?? [])
+  const media = useEditor((s) => s.project!.media)
+  const clips = useEditor((s) => s.project!.clips)
+  const used = useMemo(() => new Set(clips.map((c) => c.mediaId)), [clips])
   const dir = useEditor((s) => s.projectDir ?? '')
   const tab = useEditor((s) => s.libraryTab)
   const [over, setOver] = useState(false)
@@ -193,7 +194,7 @@ export function MediaLibrary() {
           Media <span className="count">{media.length}</span>
         </button>
         <button className={tab === 'graphics' ? 'active' : ''} onClick={() => setState({ libraryTab: 'graphics' })}>
-          Text &amp; Graphics
+          Text &amp; graphics
         </button>
       </div>
       {tab === 'media' ? (
@@ -229,13 +230,13 @@ export function MediaLibrary() {
           {media.length === 0 ? (
             <div className="empty">
               <Icon name="import" size={28} />
-              <p>Drop video, image or audio files here</p>
-              <small>MP4 · MOV · WebM · PNG · JPG · WAV · MP3</small>
+              <p>Import video, images and audio</p>
+              <small>Drop files here or use Import. MP4, MOV, WebM, PNG, JPG, WAV and MP3 work.</small>
             </div>
           ) : (
             <div className="media-grid">
               {shown.map((m) => (
-                <MediaCard key={m.id} asset={m} dir={dir} />
+                <MediaCard key={m.id} asset={m} dir={dir} used={used.has(m.id)} />
               ))}
             </div>
           )}
