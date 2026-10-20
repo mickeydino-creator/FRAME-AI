@@ -47,7 +47,8 @@
     },
     "files": [
       "out/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/**"
     ],
     "extraResources": [
       {
@@ -74,12 +75,16 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-${arch}-${target}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "FRAME AI"
+      "shortcutName": "FRAME AI",
+      "artifactName": "FRAME-AI-${version}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "FRAME-AI-${version}-portable.${ext}"
     }
   }
 }
