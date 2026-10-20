@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Small-size variant: heavier strokes, less padding, so it stays legible at 16-48 px. -->
+  <rect x="0" y="0" width="1024" height="1024" rx="192" fill="#111114"/>
+  <g fill="none" stroke="#3d8bff" stroke-width="112" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M176 384V176h208M640 176h208v208M848 640v208H640M384 848H176V640"/>
+  </g>
+  <rect x="368" y="368" width="288" height="288" rx="32" fill="#ececef"/>
+</svg>

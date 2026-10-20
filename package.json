@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:e2e": "node scripts/e2e.mjs",
     "dist:win": "electron-vite build && electron-builder --win",
-    "fixtures": "node scripts/make-fixtures.mjs"
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
@@ -43,7 +44,7 @@
     "productName": "FRAME AI",
     "directories": {
       "output": "release",
-      "buildResources": "resources"
+      "buildResources": "build"
     },
     "files": [
       "out/**/*",
@@ -58,6 +59,10 @@
       {
         "from": "node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe",
         "to": "ffmpeg/ffprobe.exe"
+      },
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
       }
     ],
     "win": {
@@ -75,12 +80,25 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installer-sidebar.bmp",
+      "uninstallerSidebar": "build/installer-sidebar.bmp",
+      "installerHeader": "build/installer-header.bmp",
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
       "shortcutName": "FRAME AI",
+      "uninstallDisplayName": "FRAME AI",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
       "artifactName": "FRAME-AI-${version}-setup.${ext}"
     },
     "portable": {

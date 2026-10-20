@@ -47,7 +47,14 @@ If FFmpeg can't be found, the start screen says so, and import and export show a
 npm run dist:win
 ```
 
-This creates an NSIS installer and a portable `.exe` in `release\`. Run it on Windows so the Windows FFmpeg binaries get bundled.
+This writes two files to `release\`:
+
+- `FRAME-AI-<version>-setup.exe`: an installer wizard with branded welcome and header art. You can choose the install folder, and it adds Start Menu and desktop shortcuts and an uninstaller in *Apps & features*.
+- `FRAME-AI-<version>-portable.exe`: a single file that runs without installing.
+
+Build on Windows so the Windows FFmpeg binaries are bundled. Linux can cross-build it too, but needs Wine (32- and 64-bit) for the uninstaller step, plus a Windows `ffmpeg.exe` placed at `node_modules/ffmpeg-static/ffmpeg.exe`.
+
+The app icon comes from `resources/icon.svg` (with `icon-small.svg` for 16-48 px). Run `npm run icons` to regenerate `build/icon.ico`, `build/icon.png` and the installer artwork.
 
 ## Using FRAME AI
 

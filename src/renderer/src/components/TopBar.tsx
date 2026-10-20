@@ -3,6 +3,7 @@ import { saveWithToast } from '../App'
 import { editor } from '../editor/api'
 import { getState, PreviewQuality, redo, setState, toast, tryDispatch, undo, useEditor } from '../editor/store'
 import { Icon } from './Icon'
+import { LogoMark } from './LogoMark'
 
 export function TopBar() {
   const name = useEditor((s) => s.project?.name ?? '')
@@ -31,7 +32,7 @@ export function TopBar() {
   return (
     <header className="topbar">
       <div className="brand">
-        <Icon name="logo" size={18} className="logo-mark" />
+        <LogoMark size={18} />
         <span className="logo-text">
           FRAME<b>AI</b>
         </span>

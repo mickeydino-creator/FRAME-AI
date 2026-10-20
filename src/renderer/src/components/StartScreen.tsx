@@ -4,6 +4,7 @@ import type { AspectRatio } from '../../../shared/types'
 import { editor } from '../editor/api'
 import { toast, useEditor } from '../editor/store'
 import { Icon } from './Icon'
+import { LogoMark } from './LogoMark'
 
 const ASPECTS: { id: AspectRatio; label: string; hint: string }[] = [
   { id: '16:9', label: '16:9', hint: 'Landscape · YouTube' },
@@ -38,7 +39,7 @@ export function StartScreen() {
     <div className="start">
       <div className="start-card">
         <div className="start-brand">
-          <Icon name="logo" size={22} className="logo-mark" />
+          <LogoMark size={22} />
           <span className="logo-text">
             FRAME<b>AI</b>
           </span>

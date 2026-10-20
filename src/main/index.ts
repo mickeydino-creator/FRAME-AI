@@ -18,6 +18,10 @@ let dirty = false
 let forceClose = false
 
 const preloadPath = join(__dirname, '../preload/index.js')
+const iconPath = app.isPackaged ? join(process.resourcesPath, 'icon.png') : join(__dirname, '../../build/icon.png')
+
+// Groups the taskbar button and shortcuts under the installed app identity on Windows.
+if (process.platform === 'win32') app.setAppUserModelId('ai.frame.editor')
 
 function loadRenderer(win: BrowserWindow, hash = ''): Promise<void> {
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
@@ -34,6 +38,7 @@ function createWindow(): void {
     minHeight: 700,
     backgroundColor: '#0a0a0b',
     title: 'FRAME AI',
+    icon: iconPath,
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
