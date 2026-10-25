@@ -25,7 +25,7 @@ export const TOOLS: ToolSpec[] = [
   {
     name: 'get_project',
     description:
-      'Read the open FRAME AI video project: media (ids, durations), tracks and every clip with its id, start and end in seconds, plus playhead and selection. Call this before editing and after edits to confirm the result.',
+      'Read the open FRAME AI video project: media (ids, durations), tracks and every clip with its id, start and end in seconds, plus playhead and selection. Call this before editing and after edits to confirm the result. How to edit with the mcp__frame-ai__* tools: times are timeline seconds; "cut the first two seconds" is cut_range 0..2; titles use add_text; check visual results with render_frame and Read the PNG; report only what the tools say happened, and when a tool fails say so and why.',
   },
   {
     name: 'list_projects',
