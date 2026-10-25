@@ -1,0 +1,48 @@
+{
+  "name": "frame-ai",
+  "version": "0.1.0",
+  "description": "FRAME AI video editor: a pane with media, preview, timeline and properties; Claude edits the timeline through its tools; FFmpeg renders MP4 locally.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "ffmpegPath": {
+      "type": "string",
+      "title": "FFmpeg path",
+      "description": "Full path to ffmpeg (ffmpeg.exe on Windows). Leave empty to use ffmpeg from PATH.",
+      "default": ""
+    },
+    "ffprobePath": {
+      "type": "string",
+      "title": "ffprobe path",
+      "description": "Full path to ffprobe. Leave empty to use ffprobe from PATH, or the one next to the FFmpeg path.",
+      "default": ""
+    },
+    "projectsDir": {
+      "type": "string",
+      "title": "Projects folder",
+      "description": "Where projects are saved. Leave empty for a 'FRAME AI Projects' folder in your home directory.",
+      "default": ""
+    },
+    "fontFile": {
+      "type": "string",
+      "title": "Title font file",
+      "description": "A .ttf/.otf file used for titles and subtitles. Leave empty to pick a system font automatically.",
+      "default": ""
+    },
+    "whisperModel": {
+      "type": "string",
+      "title": "Whisper model file (optional)",
+      "description": "Path to a whisper.cpp ggml model, enabling automatic subtitles when your FFmpeg has the whisper filter (FFmpeg 8+).",
+      "default": ""
+    },
+    "askBeforeDestructive": {
+      "type": "boolean",
+      "title": "Ask before destructive edits",
+      "description": "Ask before cutting ranges, deleting clips or replacing an export. Turn off only for unattended runs.",
+      "default": true
+    }
+  },
+  "author": {
+    "name": "FRAME AI"
+  },
+  "license": "MIT"
+}

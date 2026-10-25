@@ -1,0 +1,5 @@
+{
+  "name": "frame-ai",
+  "owner": { "name": "FRAME AI" },
+  "plugins": [{ "name": "frame-ai", "source": "./mods/frame-ai", "description": "FRAME AI video editor pane for Claude Code" }]
+}

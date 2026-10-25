@@ -17,6 +17,17 @@ FRAME AI is a local desktop video editor for Windows, built with Electron, React
 - **AI Assistant panel** (right side; Ctrl+J to collapse or open): a chat interface with suggested prompts and a message history stored per project on this computer. No assistant is connected in this version. Messages are not sent anywhere and nothing is edited. A provider seam is ready for a future local integration (see docs/COMMANDS.md).
 - **Export**: MP4 (H.264/AAC) or WebM (VP9/Opus) at project size, 720p or 480p. You choose 24-60 fps and the quality. Rendering runs in a hidden window and FFmpeg processes, so the editor stays responsive. It shows progress and an ETA, and can be cancelled.
 
+## FRAME AI for Claude Code (mod)
+
+`mods/frame-ai/` holds a Claude Code mod: the editor as a pane beside your Claude Code conversation. Claude edits the timeline in natural language through the mod's tools, on your existing Claude Code plan, and FFmpeg renders the MP4 locally. Install it from this folder:
+
+```
+claude plugin marketplace add <path-to-this-repository>
+claude plugin install frame-ai@frame-ai
+```
+
+Then type `/frame` in Claude Code. See [mods/frame-ai/README.md](mods/frame-ai/README.md) for usage, settings and limitations.
+
 ## Install and run on Windows (from source)
 
 1. Install **Node.js 20 or newer** (LTS) from https://nodejs.org.
